@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retiro de Pedidos — AUCP</title>
+  <meta name="description" content="Entregá los pedidos listos a los clientes de la Asociación Ucraniana." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    body {
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(34,197,94,0.06) 0%, transparent 60%),
+                  var(--color-bg);
+    }
+
+    .main {
+      padding: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ---- Header ---- */
+    .delivery-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .delivery-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .delivery-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    /* ---- Stats row ---- */
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .mini-stat {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .mini-stat-icon { font-size: 1.2rem; }
+    .mini-stat-value { font-size: 1.3rem; font-weight: 800; }
+    .mini-stat-label { font-size: 0.75rem; color: var(--color-text-muted); }
+
+    /* ---- Grid de pedidos ---- */
+    .pedidos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    /* ---- Tarjeta de pedido ---- */
+    .pedido-card {
+      border-radius: var(--radius-lg);
+      border: 2px solid transparent;
+      background: var(--color-surface);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      transition: var(--transition-slow);
+      animation: cardIn 0.4s ease;
+      position: relative;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .pedido-card.entregado {
+      border-color: rgba(34,197,94,0.5);
+      box-shadow: 0 0 25px rgba(34,197,94,0.15);
+    }
+
+    /* ---- Header de la tarjeta ---- */
+    .pedido-card-header {
+      padding: 1rem 1.25rem 0.75rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .pedido-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-faint);
+      margin-bottom: 0.2rem;
+    }
+
+    .pedido-cliente {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .pedido-hora {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin-top: 0.15rem;
+    }
+
+    /* ---- Items del pedido ---- */
+    .pedido-items {
+      padding: 0 1.25rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .pedido-item-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .pedido-item-qty {
+      background: var(--color-surface-2);
+      border-radius: 6px;
+      padding: 0.1rem 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary-light);
+      min-width: 48px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .pedido-item-nombre {
+      color: var(--color-text);
+      flex: 1;
+    }
+
+    /* ---- Total ---- */
+    .pedido-total-bar {
+      margin: 0 1.25rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--color-surface-2);
+      border-radius: var(--radius-md);
+      padding: 0.6rem 0.9rem;
+    }
+
+    .pedido-total-label {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pedido-total-valor {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--color-primary-light);
+    }
+
+    /* ---- Footer con botones ---- */
+    .pedido-card-footer {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .pedido-card-footer .btn {
+      flex: 1;
+      font-size: 0.85rem;
+      padding: 0.65rem;
+    }
+
+    /* ---- Timer de espera ---- */
+    .tiempo-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-2);
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    /* ---- Barra de estado ---- */
+    .status-bar {
+      height: 4px;
+      width: 100%;
+    }
+
+    .status-bar.entregado { background: linear-gradient(90deg, var(--color-entregado), transparent); }
+
+    /* ---- Cola vacia ---- */
+    .queue-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 5rem 2rem;
+    }
+
+    .queue-empty-emoji {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+      display: block;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .queue-empty-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      color: var(--color-text-muted);
+    }
+
+    .queue-empty-sub {
+      color: var(--color-text-faint);
+      font-size: 0.95rem;
+    }
+
+    /* ---- Transition al eliminar ---- */
+    .pedido-card.removing {
+      animation: cardOut 0.4s ease forwards;
+    }
+
+    @keyframes cardOut {
+      to { opacity: 0; transform: scale(0.9); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="navbar-brand-wrapper" style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
+    <img src="logo.jpg" alt="Logo" style="height:28px; width:28px; border-radius:4px; object-fit:cover;" />
+    <a href="/tomar-pedido" class="navbar-brand">AUCP</a>
+  </div>
+  <div class="navbar-links">
+    <span class="nav-group-label">💵 Caja:</span>
+    <a href="/tomar-pedido" class="nav-link" id="link-pedido">📱 Pedir</a>
+    <a href="/retirar" class="nav-link active" id="link-retirar">📦 Retirar</a>
+    <span class="nav-separator">|</span>
+    <a href="/monitor" class="nav-link" id="link-monitor">🍳 Cocina</a>
+    <a href="/cliente" class="nav-link" id="link-cliente">📺 Cola</a>
+    <span class="nav-separator">|</span>
+    <a href="/admin" class="nav-link" id="link-admin">⚙️ Admin</a>
+    <a href="/dashboard" class="nav-link" id="link-dashboard">📊 Stats</a>
+  </div>
+  <div class="navbar-end">
+    <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="Cambiar modo oscuro/claro" aria-label="Cambiar tema">
+      <span class="toggle-icon toggle-moon">🌙</span>
+      <span class="toggle-icon toggle-sun">☀️</span>
+    </button>
+  </div>
+</nav>
+<div class="ua-strip"></div>
+
+<main class="main">
+  <!-- Header -->
+  <div class="delivery-header">
+    <div class="delivery-title-group">
+      <h1 class="delivery-title">📦 Caja — Retiro de Pedidos</h1>
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        En vivo
+      </div>
+    </div>
+    <div id="last-update" style="font-size:0.78rem; color:var(--color-text-faint)">
+      Actualizando...
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="stats-row">
+    <div class="mini-stat">
+      <span class="mini-stat-icon">🛎️</span>
+      <div>
+        <div class="mini-stat-value" id="count-ready">0</div>
+        <div class="mini-stat-label">Listos para retirar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid de entregas -->
+  <div class="pedidos-grid" id="ready-grid">
+    <div class="queue-empty">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  const API = '';
+  let pollingInterval = null;
+
+  function fmt(n) {
+    return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+  }
+
+  function toast(msg, type = 'info') {
+    const icons = { success: '✅', error: '❌', info: '🔔' };
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  function tiempoTranscurrido(fechaStr) {
+    const diff = Date.now() - new Date(fechaStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return '< 1 min';
+    if (mins === 1) return '1 min';
+    if (mins < 60) return `${mins} min`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  }
+
+  function formatHora(fechaStr) {
+    return new Date(fechaStr).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str || ''));
+    return div.innerHTML;
+  }
+
+  async function cargarPedidos() {
+    try {
+      // Pedimos únicamente los pedidos que están listos para retirar
+      const res = await fetch(`${API}/api/pedidos?estado=entregado`);
+      if (!res.ok) throw new Error('Error al conectar con la API');
+      const pedidos = await res.json();
+      
+      // Ordenar por el más reciente arriba de todo
+      pedidos.sort(function(a, b) {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+
+      renderPedidos(pedidos);
+      document.getElementById('count-ready').textContent = pedidos.length;
+      document.getElementById('last-update').textContent =
+        `Última actualización: ${new Date().toLocaleTimeString('es-AR')}`;
+    } catch (e) {
+      document.getElementById('last-update').textContent = '⚠️ Error al actualizar';
+    }
+  }
+
+  function renderPedidos(pedidos) {
+    const grid = document.getElementById('ready-grid');
+
+    if (!pedidos.length) {
+      grid.innerHTML = `
+        <div class="queue-empty">
+          <span class="queue-empty-emoji">🟢</span>
+          <div class="queue-empty-title">¡Sin pedidos listos!</div>
+          <div class="queue-empty-sub">Todos los pedidos listos ya fueron entregados o no hay listos por ahora</div>
+        </div>
+      `;
+      return;
+    }
+
+    grid.querySelector('.queue-empty')?.remove();
+
+    const currentIds = new Set(pedidos.map(p => p.id));
+
+    // 1. Eliminar del DOM las tarjetas que ya no están
+    const existingCards = Array.from(grid.querySelectorAll('.pedido-card'));
+    existingCards.forEach(card => {
+      const id = parseInt(card.dataset.id);
+      if (!currentIds.has(id)) {
+        if (!card.classList.contains('removing')) {
+          card.remove();
+        }
+      }
+    });
+
+    // 2. Agregar o actualizar tarjetas en el DOM
+    pedidos.forEach(pedido => {
+      let card = document.getElementById(`pedido-${pedido.id}`);
+      const tiempoStr = tiempoTranscurrido(pedido.created_at);
+
+      if (!card) {
+        card = document.createElement('div');
+        card.className = 'pedido-card entregado';
+        card.id = `pedido-${pedido.id}`;
+        card.dataset.id = pedido.id;
+        card.dataset.estado = pedido.estado;
+        
+        const items = pedido.items || [];
+        card.innerHTML = `
+          <div class="status-bar entregado"></div>
+          <div class="pedido-card-header">
+            <div>
+              <div class="pedido-num">Pedido #${pedido.id}</div>
+              <div class="pedido-cliente">${escapeHtml(pedido.nombre_cliente)}</div>
+              <div class="pedido-hora">Listo a las ${formatHora(pedido.created_at)}</div>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:.35rem">
+              <span class="badge badge-entregado">✅ Listo / Retirar</span>
+              <div class="tiempo-badge">
+                ⏱ ${tiempoStr}
+              </div>
+            </div>
+          </div>
+
+          <div class="pedido-items">
+            ${items.filter(i => i.producto_nombre).map(i => {
+              const qtyLabel = i.cantidad_tipo === 'media' ? '½' : 'doc';
+              return `
+                <div class="pedido-item-row">
+                  <span class="pedido-item-qty">${i.cantidad}× ${qtyLabel}</span>
+                  <span class="pedido-item-nombre">${escapeHtml(i.producto_nombre)}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="pedido-total-bar">
+            <span class="pedido-total-label">Total</span>
+            <span class="pedido-total-valor">${fmt(pedido.total)}</span>
+          </div>
+
+          <div class="pedido-card-footer">
+            <button class="btn btn-primary" onclick="marcarRetirado(${pedido.id})">
+              📦 Ya retiró
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      } else {
+        const timerEl = card.querySelector('.tiempo-badge');
+        if (timerEl) {
+          timerEl.textContent = `⏱ ${tiempoStr}`;
+        }
+      }
+    });
+
+    // 3. Reordenar las tarjetas existentes en el DOM según la clasificación
+    pedidos.forEach((pedido, index) => {
+      const card = document.getElementById(`pedido-${pedido.id}`);
+      if (card && grid.children[index] !== card) {
+        grid.insertBefore(card, grid.children[index] || null);
+      }
+    });
+  }
+
+  async function marcarRetirado(id) {
+    const card = document.getElementById(`pedido-${id}`);
+    if (card) {
+      card.classList.add('removing');
+      await new Promise(r => setTimeout(r, 350));
+    }
+    try {
+      const res = await fetch(`${API}/api/pedidos/${id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'retirado' }),
+      });
+      if (!res.ok) throw new Error('Error al actualizar el estado');
+      toast('¡Pedido marcado como retirado! 📦', 'success');
+      await cargarPedidos();
+    } catch (e) {
+      toast('Error al marcar como retirado', 'error');
+      await cargarPedidos();
+    }
+  }
+
+  // ---- Init con polling cada 3 segundos ----
+  cargarPedidos();
+  pollingInterval = setInterval(cargarPedidos, 3000);
+
+  // Limpiar al salir
+  window.addEventListener('beforeunload', () => {
+    if (pollingInterval) clearInterval(pollingInterval);
+  });
+</script>
+</body>
+</html>

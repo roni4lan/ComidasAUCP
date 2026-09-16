@@ -1,0 +1,108 @@
+Creá una aplicación web completa para gestión de pedidos de comida (rotisería/empanadas). La app tiene 4 pantallas distintas, responsive, con diseño moderno.
+
+Pantalla 1 — /tomar-pedido (optimizada para celular)
+
+Campo: Nombre del cliente
+Lista de productos disponibles con imagen, nombre y precios (media docena / docena)
+El cliente elige producto + cantidad (media / docena) y se agrega al carrito
+Puede agregar múltiples ítems
+Botón "Confirmar pedido" → guarda en DB con estado pendiente y timestamp
+Diseño grande, táctil, fácil de usar en celular
+
+
+Pantalla 2 — /monitor (pantalla de cocina / TV)
+
+Muestra todos los pedidos con estado pendiente o en preparación
+Cada tarjeta muestra: nombre del cliente, ítems del pedido, hora, estado
+Botón "En preparación" y botón "✓ Listo / Entregar"
+Al marcar "Listo" → el pedido desaparece del monitor y pasa a entregado
+Se actualiza automáticamente cada 3 segundos (polling)
+Diseño tipo tablero de cocina, grande y visible
+
+
+Pantalla 3 — /admin (gestión de productos)
+
+ABM de productos: crear, editar, eliminar
+Campos: nombre, imagen (upload o URL), precio media docena, precio docena
+Lista de productos existentes
+
+
+Pantalla 4 — /dashboard (estadísticas en tiempo real)
+
+Total recaudado del día / histórico (toggle)
+Cantidad de pedidos entregados
+Ticket promedio por pedido
+Ranking de productos más vendidos (gráfico de barras)
+Producto más rentable (el que más dinero generó)
+Sugerencia automática: destacar el producto con mejor relación volumen/ingreso
+Se actualiza automáticamente cada 10 segundos
+
+
+Stack técnico
+
+Backend: Node.js + Express
+Base de datos: PostgreSQL (Docker local, puerto 5432, user: admin, pass: admin123, db: pedidos)
+Frontend: HTML + CSS + JS vanilla (sin frameworks, un archivo por pantalla)
+Tiempo real: polling con setInterval (3s monitor, 10s dashboard)
+Gráficos: Chart.js desde CDN
+API REST con rutas: /api/productos, /api/pedidos, /api/estadisticas
+
+
+Base de datos — tablas necesarias
+sqlproductos (id, nombre, imagen_url, precio_media, precio_docena, activo)
+pedidos (id, nombre_cliente, total, estado, created_at)
+pedido_items (id, pedido_id, producto_id, cantidad_tipo, precio_unitario)
+
+Extras
+
+Navbar o menú con links a las 4 pantallas
+Colores de estado: amarillo = pendiente, naranja = en preparación, verde = entregado
+Los pedidos entregados no se borran de la DB, solo cambian estado (para el dashboard)
+Incluir init.sql con las tablas y datos de ejemplo (3 productos)
+Incluir README.md con instrucciones para correr con Docker
+
+
+
+🐳 Setup Docker (sin cambios)
+bashdocker run -d \
+  --name pedidos-db \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=admin123 \
+  -e POSTGRES_DB=pedidos \
+  -p 5432:5432 \
+  postgres:16
+O con docker-compose.yml:
+yamlversion: '3.8'
+services:
+  db:
+    image: postgres:16
+    container_name: pedidos-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: pedidos
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
+
+📁 Estructura final del proyecto
+pedidos-app/
+├── backend/
+│   ├── index.js
+│   ├── db.js
+│   ├── routes/
+│   │   ├── productos.js
+│   │   ├── pedidos.js
+│   │   └── estadisticas.js
+│   └── package.json
+├── frontend/
+│   ├── tomar-pedido.html   ← celular
+│   ├── monitor.html        ← cocina
+│   ├── admin.html          ← gestión
+│   └── dashboard.html      ← estadísticas
+├── init.sql
+├── docker-compose.yml
+└── README.md

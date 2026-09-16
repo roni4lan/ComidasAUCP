@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administración de Productos — AUCP</title>
+  <meta name="description" content="Panel de administración de productos para el sistema de pedidos AUCP." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    body {
+      background: radial-gradient(ellipse 60% 40% at 70% 0%, rgba(139,92,246,0.08) 0%, transparent 60%),
+                  var(--color-bg);
+    }
+
+    .main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ---- Layout ---- */
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ---- Panel formulario ---- */
+    .form-panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem;
+      position: sticky;
+      top: 80px;
+    }
+
+    .form-panel-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ---- Preview de imagen ---- */
+    .img-preview-wrapper {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .img-preview {
+      width: 100%;
+      height: 160px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      background: var(--color-surface-2);
+      border: 2px dashed var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      overflow: hidden;
+    }
+
+    .img-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .img-preview.has-image {
+      border-style: solid;
+      border-color: var(--color-border-hover);
+    }
+
+    /* ---- Tab switch URL/Upload ---- */
+    .img-tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+      background: var(--color-surface-2);
+      border-radius: var(--radius-md);
+      padding: 0.25rem;
+    }
+
+    .img-tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.45rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+      background: none;
+      color: var(--color-text-muted);
+      font-family: inherit;
+    }
+
+    .img-tab.active {
+      background: var(--color-surface);
+      color: var(--color-text);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .img-tab-content { display: none; }
+    .img-tab-content.active { display: block; }
+
+    /* ---- Prices row ---- */
+    .prices-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* ---- Lista de productos ---- */
+    .list-panel {}
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .list-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .productos-admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* ---- Producto admin card ---- */
+    .prod-admin-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: var(--transition-slow);
+      animation: cardIn 0.3s ease;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .prod-admin-card:hover {
+      border-color: var(--color-border-hover);
+      box-shadow: var(--shadow-card);
+    }
+
+    .prod-admin-card.inactive {
+      opacity: 0.5;
+    }
+
+    .prod-admin-img {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--color-surface-2);
+    }
+
+    .prod-admin-placeholder {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-md);
+      background: var(--color-surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+
+    .prod-admin-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .prod-admin-nombre {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .prod-admin-precios {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .prod-precio-item {
+      font-size: 0.8rem;
+    }
+
+    .prod-precio-label {
+      color: var(--color-text-muted);
+    }
+
+    .prod-precio-val {
+      font-weight: 700;
+      color: var(--color-primary-light);
+    }
+
+    .prod-admin-actions {
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .inactive-badge {
+      display: inline-block;
+      background: rgba(100,100,100,0.2);
+      color: var(--color-text-faint);
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-full);
+      margin-left: 0.4rem;
+    }
+
+    /* ---- Confirm modal ---- */
+    .confirm-icon {
+      font-size: 3rem;
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .confirm-msg {
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .confirm-name {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="navbar-brand-wrapper" style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
+    <img src="logo.jpg" alt="Logo" style="height:28px; width:28px; border-radius:4px; object-fit:cover;" />
+    <a href="/tomar-pedido" class="navbar-brand">AUCP</a>
+  </div>
+  <div class="navbar-links">
+    <span class="nav-group-label">💵 Caja:</span>
+    <a href="/tomar-pedido" class="nav-link" id="link-pedido">📱 Pedir</a>
+    <a href="/retirar" class="nav-link" id="link-retirar">📦 Retirar</a>
+    <span class="nav-separator">|</span>
+    <a href="/monitor" class="nav-link" id="link-monitor">🍳 Cocina</a>
+    <a href="/cliente" class="nav-link" id="link-cliente">📺 Cola</a>
+    <span class="nav-separator">|</span>
+    <a href="/admin" class="nav-link active" id="link-admin">⚙️ Admin</a>
+    <a href="/dashboard" class="nav-link" id="link-dashboard">📊 Stats</a>
+  </div>
+  <div class="navbar-end">
+    <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="Cambiar modo oscuro/claro" aria-label="Cambiar tema">
+      <span class="toggle-icon toggle-moon">🌙</span>
+      <span class="toggle-icon toggle-sun">☀️</span>
+    </button>
+  </div>
+</nav>
+<div class="ua-strip"></div>
+
+<main class="main">
+  <div class="page-header">
+    <h1 class="page-title">⚙️ Gestión de Productos</h1>
+    <p class="page-subtitle">Creá, editá y eliminá los productos del menú</p>
+  </div>
+
+  <div class="admin-layout">
+    <!-- Panel izquierdo: Formulario -->
+    <div class="form-panel">
+      <div class="form-panel-title">
+        <span id="form-mode-icon">➕</span>
+        <span id="form-mode-text">Nuevo Producto</span>
+      </div>
+
+      <form id="producto-form" onsubmit="guardarProducto(event)">
+        <input type="hidden" id="edit-id" value="" />
+
+        <!-- Preview imagen -->
+        <div class="img-preview-wrapper">
+          <div class="img-preview" id="img-preview-box">
+            <span id="img-placeholder-icon">🖼️</span>
+          </div>
+        </div>
+
+        <!-- Tabs URL/Upload -->
+        <div class="img-tabs">
+          <button type="button" class="img-tab active" id="tab-url" onclick="switchTab('url')">🔗 URL</button>
+          <button type="button" class="img-tab" id="tab-upload" onclick="switchTab('upload')">📁 Subir</button>
+        </div>
+
+        <div class="img-tab-content active" id="content-url">
+          <div class="form-group">
+            <input type="url" id="imagen_url" class="form-control" placeholder="https://ejemplo.com/imagen.jpg" oninput="previewImageUrl()" />
+          </div>
+        </div>
+
+        <div class="img-tab-content" id="content-upload">
+          <div class="form-group">
+            <input type="file" id="imagen_file" class="form-control" accept="image/*" onchange="previewImageFile()" />
+          </div>
+        </div>
+
+        <!-- Nombre -->
+        <div class="form-group">
+          <label class="form-label" for="nombre">Nombre del producto</label>
+          <input type="text" id="nombre" class="form-control" placeholder="Ej: Empanadas de Carne" required maxlength="100" />
+        </div>
+
+        <!-- Precios -->
+        <div class="prices-row">
+          <div class="form-group">
+            <label class="form-label" for="precio_media">Precio ½ docena</label>
+            <input type="number" id="precio_media" class="form-control" placeholder="$0" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="precio_docena">Precio docena</label>
+            <input type="number" id="precio_docena" class="form-control" placeholder="$0" min="0" step="0.01" required />
+          </div>
+        </div>
+
+        <!-- Activo toggle (solo en edición) -->
+        <div class="form-group" id="activo-group" style="display:none">
+          <label class="form-label">Estado</label>
+          <select id="activo" class="form-control">
+            <option value="true">✅ Activo</option>
+            <option value="false">🚫 Inactivo</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:.75rem; margin-top:.5rem">
+          <button type="submit" class="btn btn-primary" id="btn-submit" style="flex:1">
+            ✅ Guardar producto
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-cancelar" onclick="cancelarEdicion()" style="display:none">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel derecho: Lista de productos -->
+    <div class="list-panel">
+      <div class="list-header">
+        <h2 class="list-title">📋 Productos</h2>
+        <label style="display:flex; align-items:center; gap:.5rem; font-size:.85rem; cursor:pointer; color:var(--color-text-muted)">
+          <input type="checkbox" id="show-inactive" onchange="cargarProductos()" style="cursor:pointer" />
+          Mostrar inactivos
+        </label>
+      </div>
+      <div id="productos-list">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal de confirmación -->
+<div class="modal-overlay" id="confirm-modal" style="display:none">
+  <div class="modal" style="max-width:380px">
+    <div class="confirm-icon">🗑️</div>
+    <p class="confirm-msg">¿Eliminar el producto?</p>
+    <p class="confirm-name" id="confirm-nombre"></p>
+    <div class="modal-footer" style="justify-content:center; gap:1rem">
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirm-delete" onclick="confirmarEliminar()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  const API = '';
+  let modoEdicion = false;
+  let editId = null;
+  let deleteId = null;
+  let imgTabActual = 'url';
+
+  function fmt(n) {
+    return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+  }
+
+  function toast(msg, type = 'info') {
+    const icons = { success: '✅', error: '❌', info: '🔔' };
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  // ---- Tabs imagen ----
+  function switchTab(tab) {
+    imgTabActual = tab;
+    ['url', 'upload'].forEach(t => {
+      document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+      document.getElementById(`content-${t}`).classList.toggle('active', t === tab);
+    });
+  }
+
+  function previewImageUrl() {
+    const url = document.getElementById('imagen_url').value.trim();
+    const box = document.getElementById('img-preview-box');
+    const icon = document.getElementById('img-placeholder-icon');
+    if (url) {
+      box.innerHTML = `<img src="${url}" alt="Preview" onerror="this.parentElement.innerHTML='<span>🖼️</span>'; this.parentElement.classList.remove('has-image')" style="width:100%;height:100%;object-fit:cover" />`;
+      box.classList.add('has-image');
+    } else {
+      box.innerHTML = '<span id="img-placeholder-icon">🖼️</span>';
+      box.classList.remove('has-image');
+    }
+  }
+
+  function previewImageFile() {
+    const file = document.getElementById('imagen_file').files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const box = document.getElementById('img-preview-box');
+      box.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" />`;
+      box.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---- Cargar productos ----
+  async function cargarProductos() {
+    const showInactive = document.getElementById('show-inactive').checked;
+    try {
+      const endpoint = showInactive ? '/api/productos/all' : '/api/productos';
+      const res = await fetch(`${API}${endpoint}`);
+      const productos = await res.json();
+      renderProductos(productos, showInactive);
+    } catch (e) {
+      document.getElementById('productos-list').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⚠️</div>
+          <div class="empty-state-title">Error al cargar productos</div>
+        </div>
+      `;
+    }
+  }
+
+  function renderProductos(productos, showInactive) {
+    const container = document.getElementById('productos-list');
+    if (!productos.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <div class="empty-state-title">No hay productos</div>
+          <p style="font-size:.85rem; margin-top:.4rem">Creá el primer producto con el formulario</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `<div class="productos-admin-list">
+      ${productos.map(p => `
+        <div class="prod-admin-card ${!p.activo ? 'inactive' : ''}" id="prod-${p.id}">
+          ${p.imagen_url
+            ? `<img src="${p.imagen_url}" alt="${escapeHtml(p.nombre)}" class="prod-admin-img" onerror="this.style.display='none'" />`
+            : `<div class="prod-admin-placeholder">🫔</div>`
+          }
+          <div class="prod-admin-info">
+            <div class="prod-admin-nombre">
+              ${escapeHtml(p.nombre)}
+              ${!p.activo ? '<span class="inactive-badge">Inactivo</span>' : ''}
+            </div>
+            <div class="prod-admin-precios">
+              <div class="prod-precio-item">
+                <span class="prod-precio-label">½ doc: </span>
+                <span class="prod-precio-val">${fmt(p.precio_media)}</span>
+              </div>
+              <div class="prod-precio-item">
+                <span class="prod-precio-label">Doc: </span>
+                <span class="prod-precio-val">${fmt(p.precio_docena)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="prod-admin-actions">
+            <button class="btn btn-secondary btn-sm" onclick="editarProducto(${p.id})" title="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="abrirConfirmDelete(${p.id}, '${escapeHtml(p.nombre)}')" title="Eliminar">🗑️</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str || ''));
+    return div.innerHTML;
+  }
+
+  // ---- Guardar producto ----
+  async function guardarProducto(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.textContent = '⏳ Guardando...';
+
+    const nombre = document.getElementById('nombre').value.trim();
+    const precio_media = document.getElementById('precio_media').value;
+    const precio_docena = document.getElementById('precio_docena').value;
+    const activo = document.getElementById('activo').value;
+
+    const formData = new FormData();
+    formData.append('nombre', nombre);
+    formData.append('precio_media', precio_media);
+    formData.append('precio_docena', precio_docena);
+    if (modoEdicion) formData.append('activo', activo);
+
+    if (imgTabActual === 'url') {
+      const url = document.getElementById('imagen_url').value.trim();
+      if (url) formData.append('imagen_url', url);
+    } else {
+      const file = document.getElementById('imagen_file').files[0];
+      if (file) formData.append('imagen', file);
+    }
+
+    try {
+      const method = modoEdicion ? 'PUT' : 'POST';
+      const url = modoEdicion ? `${API}/api/productos/${editId}` : `${API}/api/productos`;
+      const res = await fetch(url, { method, body: formData });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      toast(modoEdicion ? 'Producto actualizado ✅' : 'Producto creado ✅', 'success');
+      resetForm();
+      cargarProductos();
+    } catch (err) {
+      toast(err.message || 'Error al guardar', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✅ Guardar producto';
+    }
+  }
+
+  // ---- Editar ----
+  async function editarProducto(id) {
+    try {
+      const res = await fetch(`${API}/api/productos/${id}`);
+      const p = await res.json();
+
+      modoEdicion = true;
+      editId = id;
+
+      document.getElementById('edit-id').value = id;
+      document.getElementById('nombre').value = p.nombre;
+      document.getElementById('precio_media').value = p.precio_media;
+      document.getElementById('precio_docena').value = p.precio_docena;
+      document.getElementById('activo').value = String(p.activo);
+      document.getElementById('activo-group').style.display = '';
+
+      if (p.imagen_url) {
+        switchTab('url');
+        document.getElementById('imagen_url').value = p.imagen_url;
+        previewImageUrl();
+      }
+
+      document.getElementById('form-mode-icon').textContent = '✏️';
+      document.getElementById('form-mode-text').textContent = 'Editar Producto';
+      document.getElementById('btn-cancelar').style.display = 'flex';
+      document.getElementById('btn-submit').textContent = '💾 Actualizar producto';
+
+      document.querySelector('.form-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      toast('Error al cargar el producto', 'error');
+    }
+  }
+
+  function cancelarEdicion() {
+    resetForm();
+  }
+
+  function resetForm() {
+    modoEdicion = false;
+    editId = null;
+    document.getElementById('producto-form').reset();
+    document.getElementById('edit-id').value = '';
+    document.getElementById('activo-group').style.display = 'none';
+    document.getElementById('form-mode-icon').textContent = '➕';
+    document.getElementById('form-mode-text').textContent = 'Nuevo Producto';
+    document.getElementById('btn-cancelar').style.display = 'none';
+    document.getElementById('btn-submit').textContent = '✅ Guardar producto';
+    document.getElementById('img-preview-box').innerHTML = '<span id="img-placeholder-icon">🖼️</span>';
+    document.getElementById('img-preview-box').classList.remove('has-image');
+    switchTab('url');
+  }
+
+  // ---- Eliminar ----
+  function abrirConfirmDelete(id, nombre) {
+    deleteId = id;
+    document.getElementById('confirm-nombre').textContent = nombre;
+    document.getElementById('confirm-modal').style.display = 'flex';
+  }
+
+  function cerrarModal() {
+    deleteId = null;
+    document.getElementById('confirm-modal').style.display = 'none';
+  }
+
+  async function confirmarEliminar() {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`${API}/api/productos/${deleteId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast('Producto eliminado', 'info');
+      cerrarModal();
+      cargarProductos();
+    } catch (e) {
+      toast('Error al eliminar', 'error');
+    }
+  }
+
+  // Cerrar modal al hacer clic fuera
+  document.getElementById('confirm-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarModal();
+  });
+
+  // ---- Init ----
+  cargarProductos();
+</script>
+</body>
+</html>
